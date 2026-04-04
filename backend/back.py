@@ -52,12 +52,12 @@ def process_video_whisper(video_path, video_id, user_id, video_name, user_email)
             srt_content += f"{i+1}\n{start} --> {end}\n{text}\n\n"
 
         # 3. Save SRT locally
-        srt_path = f"/tmp/{video_id}.srt"
+        srt_path = f"/home/ec2-user/workdir/{video_id}.srt"
         with open(srt_path, "w", encoding="utf-8") as f:
             f.write(srt_content)
 
         # 4. Burn subtitles using FFmpeg
-        output_video_path = f"/tmp/{video_id}_captioned.mp4"
+        output_video_path = f"/home/ec2-user/workdir/{video_id}_captioned.mp4"
         subprocess.run([
             'ffmpeg', '-y', '-i', video_path, 
             '-vf', f"subtitles={srt_path}", 
@@ -104,7 +104,7 @@ def send_videos():
         return jsonify("UserNotFound"), 401
 
     temp_id = str(int(time.time()))
-    temp_path = f"/tmp/{temp_id}.mp4"
+    temp_path = f"/home/ec2-user/workdir/{temp_id}.mp4"
     file_video.save(temp_path)
 
     with open(temp_path, 'rb') as f:
