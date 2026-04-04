@@ -17,7 +17,7 @@ def retrieve_all_items(table_name):
     dict
         all items in the table
     """
-    dynamo_client = boto3.client('dynamodb', region_name='us-east-1')
+    dynamo_client = boto3.client('dynamodb', region_name='ap-south-1')
     try:
         response = dynamo_client.scan(
             TableName=table_name,
@@ -46,7 +46,7 @@ def get_items(table_name, key, value):
     dict
         all items from the table that the atribute key==value
     """
-    dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+    dynamodb = boto3.resource('dynamodb', region_name='ap-south-1')
     table = dynamodb.Table(table_name)
     try:
         response = table.scan(
@@ -77,7 +77,7 @@ def save_item(table_name, item, key, value):
     dict
         item inserted on the table
     """
-    dynamo_client = boto3.client('dynamodb', region_name='us-east-1')
+    dynamo_client = boto3.client('dynamodb', region_name='ap-south-1')
     try:
         dynamo_client.put_item(
             TableName=table_name,
@@ -88,6 +88,26 @@ def save_item(table_name, item, key, value):
             Key={key: value}
         )['Item']
         return new_item
+    except ClientError as e:
+        logging.error(e)
+        return False
+def delete_item(table_name, key):
+    """Deletes an item from a DynamoDB table
+
+    Parameters
+    ----------
+    table_name : str
+        name of the table
+    key : dict
+        item primary key
+    """
+    dynamo_client = boto3.client('dynamodb', region_name='ap-south-1')
+    try:
+        dynamo_client.delete_item(
+            TableName=table_name,
+            Key=key
+        )
+        return True
     except ClientError as e:
         logging.error(e)
         return False

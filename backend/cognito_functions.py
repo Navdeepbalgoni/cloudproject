@@ -1,7 +1,7 @@
 import boto3
 
 
-cognito = boto3.client('cognito-idp', region_name='us-east-1')
+cognito = boto3.client('cognito-idp', region_name='ap-south-1')
 
 def verify_user(user_pool, user_id):
     try:

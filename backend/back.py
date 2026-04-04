@@ -1,8 +1,8 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import os
-from s3_functions import upload_file
-from dynamo_functions import save_item, get_items
+from s3_functions import upload_file, delete_file
+from dynamo_functions import save_item, get_items, delete_item
 from cognito_functions import verify_user
 import json
 
@@ -14,8 +14,8 @@ CORS(app)
 
 VIDEOS_BUCKET = os.environ.get('VIDEOS_BUCKET')
 VIDEOS_TABLE = os.environ.get('VIDEOS_TABLE')
-FLASK_HOST = os.environ.get('FLASK_HOST')
-FLASK_PORT = os.environ.get('FLASK_PORT')
+FLASK_HOST = os.environ.get('FLASK_HOST', '0.0.0.0')
+FLASK_PORT = os.environ.get('FLASK_PORT', 5000)
 USER_POOL_ID = os.environ.get('USER_POOL_ID')
 
 
@@ -117,5 +117,24 @@ def health():
     return json.dumps("Healthy!")
 
 
+@app.route('/delete', methods=['DELETE'])
+def delete_video():
+    """Deletes a video from DynamoDB and S3"""
+    video_id = request.args.get('video_id')
+    user_id = request.args.get('user_id')
+
+    if not verify_user(USER_POOL_ID, user_id):
+        return jsonify("UserNotFound"), 401
+
+    # Delete from DynamoDB
+    delete_item(VIDEOS_TABLE, {'video_id': {'S': video_id}})
+
+    # Delete from S3 (original and captioned)
+    delete_file(VIDEOS_BUCKET, 'original', video_id)
+    delete_file(VIDEOS_BUCKET, 'captioned', video_id)
+
+    return jsonify("Deleted!"), 200
+
+
 if __name__ == '__main__':
-    app.run(host=FLASK_HOST, port=FLASK_PORT)
+    app.run(host='0.0.0.0', port=5000)

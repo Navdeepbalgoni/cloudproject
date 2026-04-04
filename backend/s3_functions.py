@@ -30,10 +30,34 @@ def upload_file(user_id, file_name, file_video, bucket, prefix=None):
     ).hexdigest()
     bucket_filename = '{}/{}.mp4'.format(prefix, file_id)
 
-    s3_client = boto3.client('s3', region_name='us-east-1')
+    dynamo_client = boto3.client('dynamodb', region_name='ap-south-1')
+    s3_client = boto3.client('s3', region_name='ap-south-1')
     try:
         s3_client.upload_fileobj(file_video, bucket, bucket_filename)
         return file_id
+    except s3_client.exceptions.ClientError as e:
+        logging.error(e)
+        return False
+
+def delete_file(bucket, prefix, file_id):
+    """Deletes a file from s3
+
+    Parameters
+    ----------
+    bucket : str
+        name of the bucket
+    prefix : str
+        file prefix (sub folders in the bucket)
+    file_id : str
+        id of the file to delete
+    """
+    s3_client = boto3.client('s3', region_name='ap-south-1')
+    try:
+        s3_client.delete_object(
+            Bucket=bucket,
+            Key='{}/{}.mp4'.format(prefix, file_id)
+        )
+        return True
     except s3_client.exceptions.ClientError as e:
         logging.error(e)
         return False

@@ -7,7 +7,7 @@ SOURCE_EMAIL = os.environ.get('SOURCE_EMAIL')
 
 
 def create_object_url(bucket_name, file_name):
-    region = os.environ.get('AWS_REGION', 'us-east-1')
+    region = os.environ.get('AWS_REGION', 'ap-south-1')
     return 'https://{}.s3.{}.amazonaws.com/{}'.format(bucket_name, region, file_name)
 
 

@@ -21,6 +21,7 @@ def lambda_handler(event, context):
 
         _, file_name = os.path.split(file_name)
         file_name, _ = os.path.splitext(file_name)
+        region = os.environ.get('AWS_REGION', 'ap-south-1')
         target_lang = os.environ.get('TARGET_LANGUAGE', 'pt')
         source_lang = os.environ.get('SOURCE_LANGUAGE', 'en')
         video_id = file_name.replace(f'-{target_lang}', '')
@@ -38,7 +39,7 @@ def lambda_handler(event, context):
             'captioned_video': captioned_video,
             'job_info': job_info
         }
-        url = 'http://{}:8080/video'.format(CAPTION_API)
+        url = 'http://{}:5000/video'.format(CAPTION_API)
 
         req = request.Request(url)
         req.add_header('Content-Type', 'application/json; charset=utf-8')
