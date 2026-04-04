@@ -25,8 +25,8 @@ FLASK_HOST = os.environ.get('FLASK_HOST', '0.0.0.0')
 FLASK_PORT = os.environ.get('FLASK_PORT', 5000)
 
 # Initialize Gemini
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash-latest')
+genai.configure(api_key=GEMINI_API_KEY, transport='rest')
+model = genai.GenerativeModel('gemini-1.5-flash')
 
 def process_video_gemini(video_path, video_id, user_id, video_name, user_email):
     """Background task to process video using Gemini AI"""
