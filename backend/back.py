@@ -26,7 +26,7 @@ FLASK_PORT = os.environ.get('FLASK_PORT', 5000)
 
 # Initialize Gemini
 genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel('gemini-1.5-flash-latest')
 
 def process_video_gemini(video_path, video_id, user_id, video_name, user_email):
     """Background task to process video using Gemini AI"""
@@ -134,9 +134,7 @@ def list_videos():
         for d in items:
             info = {}
             for k, v in d.items():
-                # Extract value from DynamoDB format {'S': 'value'} or {'BOOL': True}
-                val = list(v.values())[0]
-                info[k] = str(val)
+                info[k] = str(v)
             videos.append(info)
     return jsonify(videos), 200
 
