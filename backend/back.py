@@ -80,7 +80,7 @@ def call_gemini_raw(video_path):
             "contents": [{
                 "parts": [
                     {"text": "Transcribe this video and provide professional subtitles in SRT format. If the audio is not in Portuguese, translate it to Portuguese. Only return the SRT content."},
-                    {"file_data": {"mime_type": "video/mp4", "file_uri": file_uri}}
+                    {"fileData": {"mime_type": "video/mp4", "file_uri": file_uri}}
                 ]
             }]
         }
