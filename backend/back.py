@@ -86,13 +86,19 @@ def call_gemini_raw(video_path):
         }
         gen_url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
         gen_res = requests.post(gen_url, json=prompt)
+        res_data = gen_res.json()
         
-        # Extract text from response
-        srt_content = gen_res.json()['candidates'][0]['content']['parts'][0]['text']
+        # 4. Extract text from response
+        if 'candidates' in res_data:
+            srt_content = res_data['candidates'][0]['content']['parts'][0]['text']
+        else:
+            print(f"Gemini Generation Failed. Full Response: {json.dumps(res_data, indent=2)}")
+            return None
+            
         # Clean markdown if present
         srt_content = srt_content.replace('```srt', '').replace('```', '').strip()
         
-        # 4. Delete temp file from Gemini server
+        # 5. Delete temp file from Gemini server
         requests.delete(f"https://generativelanguage.googleapis.com/v1beta/{file_name}?key={GEMINI_API_KEY}")
         
         return srt_content
