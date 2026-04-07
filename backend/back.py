@@ -80,11 +80,11 @@ def call_gemini_raw(video_path):
             "contents": [{
                 "parts": [
                     {"text": "Transcribe this video and provide professional subtitles in SRT format. If the audio is not in Portuguese, translate it to Portuguese. Only return the SRT content."},
-                    {"fileData": {"mime_type": "video/mp4", "file_uri": file_uri}}
+                    {"file_data": {"mime_type": "video/mp4", "file_uri": file_uri}}
                 ]
             }]
         }
-        gen_url = f"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        gen_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
         gen_res = requests.post(gen_url, json=prompt)
         res_data = gen_res.json()
         
