@@ -3,7 +3,7 @@ import json
 import time
 import threading
 import subprocess
-import requests
+import whisper
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from s3_functions import upload_file, delete_file
@@ -19,147 +19,71 @@ CORS(app)
 # Environment Variables
 VIDEOS_BUCKET = os.environ.get('VIDEOS_BUCKET')
 VIDEOS_TABLE = os.environ.get('VIDEOS_TABLE')
-GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
 USER_POOL_ID = os.environ.get('USER_POOL_ID')
 FLASK_HOST = os.environ.get('FLASK_HOST', '0.0.0.0')
 FLASK_PORT = os.environ.get('FLASK_PORT', 5000)
 
-WORKING_DIR = "/home/ec2-user/workdir"
+# Initialize Whisper (using 'tiny' model for EC2 performance)
+print("Loading Whisper AI...")
+whisper_model = whisper.load_model("tiny")
+print("Whisper Loaded!")
 
-def call_gemini_raw(video_path):
-    """Call Gemini using Raw HTTP Requests (No SDK needed!)"""
+def seconds_to_srt_time(seconds):
+    """Helper to convert seconds to SRT timestamp format"""
+    td = time.gmtime(seconds)
+    ms = int((seconds - int(seconds)) * 1000)
+    return f"{time.strftime('%H:%M:%S', td)},{ms:03d}"
+
+def process_video_whisper(video_path, video_id, user_id, video_name, user_email):
+    """Background task to process video using local Whisper AI"""
     try:
-        print(f"Uploading {video_path} to Gemini...")
+        print(f"Starting local AI processing for {video_id}")
         
-        # 1. Upload to Gemini File API (Initiation)
-        headers_init = {
-            "X-Goog-Upload-Protocol": "resumable",
-            "X-Goog-Upload-Command": "start",
-            "X-Goog-Upload-Header-Content-Length": str(os.path.getsize(video_path)),
-            "X-Goog-Upload-Header-Content-Type": "video/mp4",
-            "Content-Type": "application/json"
-        }
-        upload_init_url = f"https://generativelanguage.googleapis.com/upload/v1beta/files?key={GEMINI_API_KEY}"
-        init_body = {"file": {"display_name": os.path.basename(video_path)}}
-        init_res = requests.post(upload_init_url, headers=headers_init, json=init_body)
+        # 1. Transcribe using local Whisper
+        result = whisper_model.transcribe(video_path)
+        segments = result['segments']
         
-        if init_res.status_code != 200:
-            print(f"Gemini Init Failed ({init_res.status_code}): {init_res.text}")
-            return None
-            
-        upload_url = init_res.headers.get("X-Goog-Upload-URL")
-        
-        # 2. Upload the data (Finalize)
-        headers_put = {
-            "X-Goog-Upload-Command": "upload, finalize",
-            "X-Goog-Upload-Offset": "0",
-            "Content-Length": str(os.path.getsize(video_path))
-        }
-        with open(video_path, 'rb') as f:
-            upload_res = requests.put(upload_url, headers=headers_put, data=f)
-            
-        if upload_res.status_code != 200:
-            print(f"Gemini Put Failed ({upload_res.status_code}): {upload_res.text}")
-            return None
-        
-        file_info = upload_res.json()
-        file_uri = file_info['file']['uri']
-        file_name = file_info['file']['name']
-        print(f"File uploaded! URI: {file_uri}")
+        # 2. Format into SRT
+        srt_content = ""
+        for i, segment in enumerate(segments):
+            start = seconds_to_srt_time(segment['start'])
+            end = seconds_to_srt_time(segment['end'])
+            text = segment['text'].strip()
+            srt_content += f"{i+1}\n{start} --> {end}\n{text}\n\n"
 
-        # 2. Wait for processing
-        while True:
-            check_res = requests.get(f"https://generativelanguage.googleapis.com/v1beta/{file_name}?key={GEMINI_API_KEY}")
-            state = check_res.json().get('state')
-            if state == 'ACTIVE': break
-            print("Processing video in Gemini cloud...")
-            time.sleep(5)
-
-        # 3. Generate Subtitles (Try multiple model names just in case)
-        models_to_try = [
-            "gemini-1.5-flash", 
-            "gemini-1.5-flash-001",
-            "gemini-1.5-pro-latest"
-        ]
-        
-        res_data = None
-        for model in models_to_try:
-            print(f"Trying Gemini model: {model}...")
-            gen_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
-            prompt = {
-                "contents": [{
-                    "parts": [
-                        {"text": "Transcribe this video and provide professional subtitles in SRT format. If the audio is not in Portuguese, translate it to Portuguese. Only return the SRT content."},
-                        {"file_data": {"mime_type": "video/mp4", "file_uri": file_uri}}
-                    ]
-                }]
-            }
-            gen_res = requests.post(gen_url, json=prompt)
-            res_data = gen_res.json()
-            
-            if gen_res.status_code == 200 and 'candidates' in res_data:
-                print(f"Success with model: {model}!")
-                break
-            else:
-                print(f"Model {model} failed with {gen_res.status_code}")
-
-        # 4. Extract text from response
-        if res_data and 'candidates' in res_data:
-            srt_content = res_data['candidates'][0]['content']['parts'][0]['text']
-        else:
-            print(f"All Gemini Models Failed. Final Error: {json.dumps(res_data, indent=2)}")
-            return None
-            
-        # Clean markdown if present
-        srt_content = srt_content.replace('```srt', '').replace('```', '').strip()
-        
-        # 5. Delete temp file from Gemini server
-        requests.delete(f"https://generativelanguage.googleapis.com/v1beta/{file_name}?key={GEMINI_API_KEY}")
-        
-        return srt_content
-
-    except Exception as e:
-        print(f"Raw Gemini Error: {e}")
-        return None
-
-def process_video_cloud(video_path, video_id, user_id, video_name, user_email):
-    """Background task to process video using cloud Gemini"""
-    try:
-        srt_content = call_gemini_raw(video_path)
-        if not srt_content: return
-
-        # Save SRT locally
-        srt_path = f"{WORKING_DIR}/{video_id}.srt"
+        # 3. Save SRT locally
+        srt_path = f"/home/ec2-user/workdir/{video_id}.srt"
         with open(srt_path, "w", encoding="utf-8") as f:
             f.write(srt_content)
 
-        # Burn subtitles using FFmpeg
-        output_video_path = f"{WORKING_DIR}/{video_id}_captioned.mp4"
+        # 4. Burn subtitles using FFmpeg
+        output_video_path = f"/home/ec2-user/workdir/{video_id}_captioned.mp4"
         subprocess.run([
             'ffmpeg', '-y', '-i', video_path, 
             '-vf', f"subtitles={srt_path}", 
             '-c:a', 'copy', output_video_path
         ], check=True)
 
-        # Upload captioned video to S3
+        # 5. Upload captioned video to S3
         with open(output_video_path, 'rb') as f:
             upload_file(user_id, video_name, f, VIDEOS_BUCKET, 'captioned')
 
-        # Update DynamoDB
+        # 6. Update DynamoDB
         video_uri = f"https://{VIDEOS_BUCKET}.s3.ap-south-1.amazonaws.com/captioned/{video_id}.mp4"
-        save_item(VIDEOS_TABLE, {
+        updated_item = {
             'video_id': {'S': video_id},
             'video_name': {'S': video_name},
             'user_id': {'S': user_id},
             'user_email': {'S': user_email},
             'finished': {'BOOL': True},
             'video_uri': {'S': video_uri},
-            'duration': {'N': '0'},
-            'transcription_words': {'N': str(len(srt_content.split()))},
-            'translation_words': {'N': str(len(srt_content.split()))}
-        }, 'video_id', {'S': video_id})
+            'duration': {'N': str(int(result.get('duration', 0)))},
+            'transcription_words': {'N': str(len(result['text'].split()))},
+            'translation_words': {'N': str(len(result['text'].split()))} # Identical for now
+        }
+        save_item(VIDEOS_TABLE, updated_item, 'video_id', {'S': video_id})
         
-        print(f"Cloud processing complete for {video_id}!")
+        print(f"Local processing complete for {video_id}!")
         
         # Cleanup
         os.remove(video_path)
@@ -167,7 +91,7 @@ def process_video_cloud(video_path, video_id, user_id, video_name, user_email):
         os.remove(output_video_path)
 
     except Exception as e:
-        print(f"Error in Cloud Processing: {e}")
+        print(f"Error in Local Whisper Processing: {e}")
 
 @app.route('/send', methods=['POST'])
 def send_videos():
@@ -180,24 +104,25 @@ def send_videos():
         return jsonify("UserNotFound"), 401
 
     temp_id = str(int(time.time()))
-    temp_path = f"{WORKING_DIR}/{temp_id}.mp4"
-    if not os.path.exists(WORKING_DIR): os.makedirs(WORKING_DIR)
+    temp_path = f"/home/ec2-user/workdir/{temp_id}.mp4"
     file_video.save(temp_path)
 
     with open(temp_path, 'rb') as f:
         video_id = upload_file(user_id, file_name, f, VIDEOS_BUCKET, 'original')
 
-    save_item(VIDEOS_TABLE, {
+    video_info = {
         "video_id": {"S": video_id},
         "user_id": {"S": user_id},
         "user_email": {"S": user_email},
         "video_name": {"S": file_name},
         "finished": {"BOOL": False},
-    }, 'video_id', {'S': video_id})
+    }
+    save_item(VIDEOS_TABLE, video_info, 'video_id', {'S': video_id})
 
-    threading.Thread(target=process_video_cloud, args=(temp_path, video_id, user_id, file_name, user_email)).start()
+    thread = threading.Thread(target=process_video_whisper, args=(temp_path, video_id, user_id, file_name, user_email))
+    thread.start()
 
-    return jsonify("Job started with Raw Gemini Cloud!"), 200
+    return jsonify("Job started with Local Whisper AI!"), 200
 
 @app.route('/list', methods=['GET'])
 def list_videos():
@@ -208,7 +133,9 @@ def list_videos():
     videos = []
     if items:
         for d in items:
-            info = {k: str(list(v.values())[0]) if isinstance(v, dict) else str(v) for k, v in d.items()}
+            info = {}
+            for k, v in d.items():
+                info[k] = str(v)
             videos.append(info)
     return jsonify(videos), 200
 
@@ -228,4 +155,4 @@ def health():
     return json.dumps("Healthy!")
 
 if __name__ == '__main__':
-    app.run(host=FLASK_HOST, port=int(FLASK_PORT))
+    app.run(host=FLASK_HOST, port=FLASK_PORT)
