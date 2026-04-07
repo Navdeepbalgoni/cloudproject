@@ -32,17 +32,28 @@ def call_gemini_raw(video_path):
         print(f"Uploading {video_path} to Gemini...")
         
         # 1. Upload to Gemini File API
-        headers_upload = {
+        headers_init = {
             "X-Goog-Upload-Protocol": "resumable",
             "X-Goog-Upload-Header-Content-Length": str(os.path.getsize(video_path)),
             "X-Goog-Upload-Header-Content-Type": "video/mp4",
+            "Content-Type": "application/json"
         }
         upload_init_url = f"https://generativelanguage.googleapis.com/upload/v1beta/files?key={GEMINI_API_KEY}"
-        init_res = requests.post(upload_init_url, headers=headers_upload)
+        init_body = {"file": {"display_name": os.path.basename(video_path)}}
+        init_res = requests.post(upload_init_url, headers=headers_init, json=init_body)
+        
+        if init_res.status_code != 200:
+            print(f"Gemini Init Failed ({init_res.status_code}): {init_res.text}")
+            return None
+            
         upload_url = init_res.headers.get("X-Goog-Upload-URL")
         
         with open(video_path, 'rb') as f:
             upload_res = requests.put(upload_url, data=f)
+            
+        if upload_res.status_code != 200:
+            print(f"Gemini Put Failed ({upload_res.status_code}): {upload_res.text}")
+            return None
         
         file_info = upload_res.json()
         file_uri = file_info['file']['uri']
