@@ -75,24 +75,39 @@ def call_gemini_raw(video_path):
             print("Processing video in Gemini cloud...")
             time.sleep(5)
 
-        # 3. Generate Subtitles
-        prompt = {
-            "contents": [{
-                "parts": [
-                    {"text": "Transcribe this video and provide professional subtitles in SRT format. If the audio is not in Portuguese, translate it to Portuguese. Only return the SRT content."},
-                    {"file_data": {"mime_type": "video/mp4", "file_uri": file_uri}}
-                ]
-            }]
-        }
-        gen_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_API_KEY}"
-        gen_res = requests.post(gen_url, json=prompt)
-        res_data = gen_res.json()
+        # 3. Generate Subtitles (Try multiple model names just in case)
+        models_to_try = [
+            "gemini-1.5-flash", 
+            "gemini-1.5-flash-001",
+            "gemini-1.5-pro-latest"
+        ]
         
+        res_data = None
+        for model in models_to_try:
+            print(f"Trying Gemini model: {model}...")
+            gen_url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={GEMINI_API_KEY}"
+            prompt = {
+                "contents": [{
+                    "parts": [
+                        {"text": "Transcribe this video and provide professional subtitles in SRT format. If the audio is not in Portuguese, translate it to Portuguese. Only return the SRT content."},
+                        {"file_data": {"mime_type": "video/mp4", "file_uri": file_uri}}
+                    ]
+                }]
+            }
+            gen_res = requests.post(gen_url, json=prompt)
+            res_data = gen_res.json()
+            
+            if gen_res.status_code == 200 and 'candidates' in res_data:
+                print(f"Success with model: {model}!")
+                break
+            else:
+                print(f"Model {model} failed with {gen_res.status_code}")
+
         # 4. Extract text from response
-        if 'candidates' in res_data:
+        if res_data and 'candidates' in res_data:
             srt_content = res_data['candidates'][0]['content']['parts'][0]['text']
         else:
-            print(f"Gemini Generation Failed. Full Response: {json.dumps(res_data, indent=2)}")
+            print(f"All Gemini Models Failed. Final Error: {json.dumps(res_data, indent=2)}")
             return None
             
         # Clean markdown if present
