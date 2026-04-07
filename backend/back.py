@@ -84,7 +84,7 @@ def call_gemini_raw(video_path):
                 ]
             }]
         }
-        gen_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={GEMINI_API_KEY}"
+        gen_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={GEMINI_API_KEY}"
         gen_res = requests.post(gen_url, json=prompt)
         res_data = gen_res.json()
         
