@@ -12,11 +12,12 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
-VIDEOS_BUCKET = os.environ.get('VIDEOS_BUCKET')
-VIDEOS_TABLE = os.environ.get('VIDEOS_TABLE')
+# Environment Variables with Hardcoded Fallbacks for EC2 Stability
+VIDEOS_BUCKET = os.environ.get('VIDEOS_BUCKET', 'video-subtitles-project-navdeep')
+VIDEOS_TABLE = os.environ.get('VIDEOS_TABLE', 'videos-table')
 FLASK_HOST = os.environ.get('FLASK_HOST', '0.0.0.0')
 FLASK_PORT = os.environ.get('FLASK_PORT', 5000)
-USER_POOL_ID = os.environ.get('USER_POOL_ID')
+USER_POOL_ID = os.environ.get('USER_POOL_ID', 'ap-south-1_fsYQAHgQX')
 
 @app.route('/send', methods=['POST'])
 def send_videos():
@@ -57,7 +58,7 @@ def list_videos():
 @app.route('/delete', methods=['DELETE'])
 def delete_video():
     video_id = request.args.get('video_id')
-    user_id = request.args.get('user_id')
+    user_id = request.args.get('id') # Frontend uses 'id' for user_id in delete
     if not verify_user(USER_POOL_ID, user_id):
         return jsonify("UserNotFound"), 401
     
