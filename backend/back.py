@@ -31,9 +31,10 @@ def call_gemini_raw(video_path):
     try:
         print(f"Uploading {video_path} to Gemini...")
         
-        # 1. Upload to Gemini File API
+        # 1. Upload to Gemini File API (Initiation)
         headers_init = {
             "X-Goog-Upload-Protocol": "resumable",
+            "X-Goog-Upload-Command": "start",
             "X-Goog-Upload-Header-Content-Length": str(os.path.getsize(video_path)),
             "X-Goog-Upload-Header-Content-Type": "video/mp4",
             "Content-Type": "application/json"
@@ -48,8 +49,14 @@ def call_gemini_raw(video_path):
             
         upload_url = init_res.headers.get("X-Goog-Upload-URL")
         
+        # 2. Upload the data (Finalize)
+        headers_put = {
+            "X-Goog-Upload-Command": "upload, finalize",
+            "X-Goog-Upload-Offset": "0",
+            "Content-Length": str(os.path.getsize(video_path))
+        }
         with open(video_path, 'rb') as f:
-            upload_res = requests.put(upload_url, data=f)
+            upload_res = requests.put(upload_url, headers=headers_put, data=f)
             
         if upload_res.status_code != 200:
             print(f"Gemini Put Failed ({upload_res.status_code}): {upload_res.text}")
