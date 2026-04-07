@@ -58,7 +58,7 @@ def list_videos():
 @app.route('/delete', methods=['DELETE'])
 def delete_video():
     video_id = request.args.get('video_id')
-    user_id = request.args.get('id') # Frontend uses 'id' for user_id in delete
+    user_id = request.args.get('user_id') 
     if not verify_user(USER_POOL_ID, user_id):
         return jsonify("UserNotFound"), 401
     
