@@ -99,7 +99,7 @@ def lambda_handler(event, context):
             translated_chunk = translate.translate_text(
                 Text=transcript_chunk,
                 SourceLanguageCode='en',
-                TargetLanguageCode=os.environ.get('TARGET_LANGUAGE', 'pt')
+                TargetLanguageCode=os.environ.get('TARGET_LANGUAGE', 'hi')
             )
             translated_text.append(translated_chunk['TranslatedText'])
         translated_text = '\n'.join(translated_text)
@@ -113,7 +113,7 @@ def lambda_handler(event, context):
             TRANSLATE_BUCKET, 'en/{}-en.vtt'.format(file_name)
         ).put(Body=transcript_text)
         s3.Object(
-            TRANSLATE_BUCKET, 'pt/{}-pt.vtt'.format(file_name)
+            TRANSLATE_BUCKET, 'hi/{}-hi.vtt'.format(file_name)
         ).put(Body=translated_text)
 
     return {

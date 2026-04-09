@@ -6,9 +6,22 @@ VIDEOS_TABLE = os.environ.get('VIDEOS_TABLE')
 SOURCE_EMAIL = os.environ.get('SOURCE_EMAIL')
 
 
-def create_object_url(bucket_name, file_name):
-    region = os.environ.get('AWS_REGION', 'ap-south-1')
-    return 'https://{}.s3.{}.amazonaws.com/{}'.format(bucket_name, region, file_name)
+def create_presigned_url(bucket_name, file_name):
+    s3_client = boto3.client('s3')
+    try:
+        url = s3_client.generate_presigned_url(
+            'get_object',
+            Params={
+                'Bucket': bucket_name,
+                'Key': file_name,
+                'ResponseContentDisposition': 'attachment'
+            },
+            ExpiresIn=3600
+        )
+        return url
+    except Exception as e:
+        print("Error generating presigned URL:", e)
+        return 'https://{}.s3.amazonaws.com/{}'.format(bucket_name, file_name)
 
 
 def lambda_handler(event, context):
@@ -26,8 +39,8 @@ def lambda_handler(event, context):
         info = json.loads(file_content)
 
         video_id = info['video_id']
-        video_key = '/captioned/{}.mp4'.format(video_id)
-        video_uri = create_object_url(bucket_name, video_key)
+        video_key = 'captioned/{}.mp4'.format(video_id)
+        video_uri = create_presigned_url(bucket_name, video_key)
 
         video = dynamo.query(
             TableName=VIDEOS_TABLE,
