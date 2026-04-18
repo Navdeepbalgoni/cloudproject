@@ -1,0 +1,34 @@
+{
+  "jobName": "61924168b96d7ba8fa41a7e6e056641adb60ff2d",
+  "accountId": "643203008308",
+  "results": {
+    "transcripts": [
+      {
+        "transcript": "Cloud computing is the on-demand availability of computer system resources. This video demonstrates subtitle generation using AWS services."
+      }
+    ],
+    "items": [
+      {"type": "pronunciation", "start_time": "0.1", "end_time": "0.6", "alternatives": [{"confidence": "1.0", "content": "Cloud"}]},
+      {"type": "pronunciation", "start_time": "0.7", "end_time": "1.3", "alternatives": [{"confidence": "1.0", "content": "computing"}]},
+      {"type": "pronunciation", "start_time": "1.4", "end_time": "1.6", "alternatives": [{"confidence": "1.0", "content": "is"}]},
+      {"type": "pronunciation", "start_time": "1.7", "end_time": "2.0", "alternatives": [{"confidence": "1.0", "content": "the"}]},
+      {"type": "pronunciation", "start_time": "2.1", "end_time": "2.5", "alternatives": [{"confidence": "1.0", "content": "on-demand"}]},
+      {"type": "pronunciation", "start_time": "2.6", "end_time": "3.2", "alternatives": [{"confidence": "1.0", "content": "availability"}]},
+      {"type": "pronunciation", "start_time": "3.3", "end_time": "3.5", "alternatives": [{"confidence": "1.0", "content": "of"}]},
+      {"type": "pronunciation", "start_time": "3.6", "end_time": "4.0", "alternatives": [{"confidence": "1.0", "content": "computer"}]},
+      {"type": "pronunciation", "start_time": "4.1", "end_time": "4.5", "alternatives": [{"confidence": "1.0", "content": "system"}]},
+      {"type": "pronunciation", "start_time": "4.6", "end_time": "5.2", "alternatives": [{"confidence": "1.0", "content": "resources"}]},
+      {"type": "punctuation", "alternatives": [{"confidence": "0.0", "content": "."}]},
+      {"type": "pronunciation", "start_time": "5.5", "end_time": "5.9", "alternatives": [{"confidence": "1.0", "content": "This"}]},
+      {"type": "pronunciation", "start_time": "6.0", "end_time": "6.4", "alternatives": [{"confidence": "1.0", "content": "video"}]},
+      {"type": "pronunciation", "start_time": "6.5", "end_time": "7.0", "alternatives": [{"confidence": "1.0", "content": "demonstrates"}]},
+      {"type": "pronunciation", "start_time": "7.1", "end_time": "7.5", "alternatives": [{"confidence": "1.0", "content": "subtitle"}]},
+      {"type": "pronunciation", "start_time": "7.6", "end_time": "8.0", "alternatives": [{"confidence": "1.0", "content": "generation"}]},
+      {"type": "pronunciation", "start_time": "8.1", "end_time": "8.4", "alternatives": [{"confidence": "1.0", "content": "using"}]},
+      {"type": "pronunciation", "start_time": "8.5", "end_time": "8.8", "alternatives": [{"confidence": "1.0", "content": "AWS"}]},
+      {"type": "pronunciation", "start_time": "8.9", "end_time": "9.5", "alternatives": [{"confidence": "1.0", "content": "services"}]},
+      {"type": "punctuation", "alternatives": [{"confidence": "0.0", "content": "."}]}
+    ]
+  },
+  "status": "COMPLETED"
+}

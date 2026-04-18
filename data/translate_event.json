@@ -1,0 +1,14 @@
+{
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "video-transcribe-navdeep"
+        },
+        "object": {
+          "key": "61924168b96d7ba8fa41a7e6e056641adb60ff2d.json"
+        }
+      }
+    }
+  ]
+}
