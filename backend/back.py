@@ -17,7 +17,7 @@ VIDEOS_BUCKET = os.environ.get('VIDEOS_BUCKET', 'video-subtitles-project-navdeep
 VIDEOS_TABLE = os.environ.get('VIDEOS_TABLE', 'videos-table')
 FLASK_HOST = os.environ.get('FLASK_HOST', '0.0.0.0')
 FLASK_PORT = os.environ.get('FLASK_PORT', 5000)
-USER_POOL_ID = os.environ.get('USER_POOL_ID', 'ap-south-1_l4cvBCgZP')
+USER_POOL_ID = os.environ.get('USER_POOL_ID', 'ap-south-1_fsYQAHgQX')
 
 @app.route('/send', methods=['POST'])
 def send_videos():
